@@ -1,5 +1,7 @@
+import os
 import sqlite3
 
+from dotenv import load_dotenv
 from flask import Flask, redirect, request, render_template, send_file, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin.contrib.sqla import ModelView
@@ -29,16 +31,18 @@ import cv2
 basedir = path.abspath(path.dirname(__file__))
 upload_dir = path.join(basedir, 'uploads')
 
+# .env 파일에서 환경변수 로드 (API 키, 시크릿 등)
+load_dotenv()
+
 ###########################################################
 
 # FLASK APP CONFIGURATIONS
-app = Flask(__name__)
 app = Flask(__name__, static_url_path='/static')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users_info.db'
-app.config['SECRET_KEY'] = 'adminsecretkey'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-change-me')
 app.config['UPLOADED_PATH'] = upload_dir
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
-app.config['JWT_SECRET_KEY'] = 'secret'
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-jwt-change-me')
 
 
 ###########################################################
