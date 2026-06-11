@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>혈자리 자가지압 도우미 (데모)</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header>
+  <h1>혈자리 자가지압 도우미 <span class="tag">연구 데모</span></h1>
+  <p class="sub">증상을 적으면 혈자리를 찾아주고, 카메라로 손을 비추면 그 위에 실시간으로 표시합니다.
+    <strong>의료행위가 아닌 자가관리 참고용입니다.</strong></p>
+</header>
+
+<main>
+  <!-- ① 증상 -> 혈자리 -->
+  <section class="panel" id="symptom-panel">
+    <h2>① 증상 입력</h2>
+    <textarea id="symptom-input" rows="3"
+      placeholder="예) 머리가 지끈거리고 속이 메스꺼워요"></textarea>
+    <div class="row">
+      <button id="recommend-btn">혈자리 추천</button>
+      <label class="mock-toggle" title="API 과금 없이 규칙기반으로 테스트">
+        <input type="checkbox" id="mock-chk" /> 무과금(mock)
+      </label>
+    </div>
+    <div id="result"></div>
+  </section>
+
+  <!-- ② 손 위 실시간 오버레이 -->
+  <section class="panel" id="cam-panel">
+    <h2>② 손에 실시간 표시</h2>
+    <div class="cam-wrap">
+      <video id="cam" playsinline muted></video>
+      <canvas id="overlay"></canvas>
+      <div id="cam-msg" class="cam-msg">‘카메라 시작’을 눌러 손을 비춰주세요.</div>
+    </div>
+    <div class="row">
+      <button id="cam-btn">카메라 시작</button>
+      <span id="cam-status" class="muted"></span>
+    </div>
+    <p class="muted small">손 전체가 보이게, 밝은 곳에서 비추면 인식률이 높습니다.
+      추천 혈자리 중 <span class="cv-dot"></span>표시된 혈자리가 손 위에 강조됩니다.</p>
+  </section>
+</main>
+
+<footer id="disclaimer"></footer>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
