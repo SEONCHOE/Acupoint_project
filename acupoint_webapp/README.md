@@ -43,7 +43,16 @@ pip install -r requirements.txt
 ## 검증 상태
 - 백엔드 `/recommend`: mock·실제 GPT-4o-mini·응급분기 동작 확인.
 - M2 JS 포팅: 실제 landmarks.csv 행으로 파이썬 `core.py` 대비 좌표 오차 5.7e-4 px.
-- 브라우저 카메라+MediaPipe+캔버스: 실기기 브라우저에서 확인 필요(헤드리스 불가).
+- 브라우저 카메라+MediaPipe+캔버스: `localhost` 데스크톱 브라우저에서 손 검출·혈자리 AR 오버레이 동작 확인 완료.
+  (모바일 HTTPS 실기기 테스트는 별도 — 아래 '모바일 테스트' 참고.)
+
+## 모바일 테스트 (HTTPS 필요)
+카메라는 보안 컨텍스트(`localhost` 또는 HTTPS)에서만 동작. 휴대폰 등 IP 접속은 TLS 필수.
+```bash
+./run_web.sh                 # 8000 포트로 로컬 기동(터미널 1)
+ngrok http 8000              # 공개 HTTPS URL 발급(터미널 2)
+```
+발급된 `https://....ngrok-free.app` 를 휴대폰 브라우저로 열어 후면카메라로 손을 비춰 확인.
 
 ## 모델/버전 메모
 - MediaPipe tasks-vision `0.10.14`(CDN), hand_landmarker float16(Google CDN). 버전 변경은 `app.js`의 `MP_VER`.
