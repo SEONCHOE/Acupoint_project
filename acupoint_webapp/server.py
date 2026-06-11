@@ -11,7 +11,7 @@
 import os
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -36,6 +36,18 @@ app = FastAPI(title="Acupoint Web (1b)")
 
 _KB = json.load(open(os.path.join(SYMPTOM_DIR, "kb.json"), encoding="utf-8"))
 _matchers: dict[str, SymptomMatcher] = {}
+
+# STT 모델 — 키 누락 시 호출 안 함(명확한 안내 반환). 코드에 키 하드코딩 금지.
+STT_MODEL = os.environ.get("STT_MODEL", "gpt-4o-mini-transcribe")
+_oai_client = None
+
+
+def _openai():
+    global _oai_client
+    if _oai_client is None:
+        from openai import OpenAI
+        _oai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    return _oai_client
 
 
 def get_matcher(use_mock: bool) -> SymptomMatcher:
@@ -72,6 +84,27 @@ def recommend(req: RecommendReq):
         return {"error": f"분석 실패: {e}", "fallback_mock": True}
     result["used_mock"] = use_mock
     return result
+
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    """음성(webm/mp4/ogg…) -> 한국어 텍스트. 브라우저 MediaRecorder 업로드를 OpenAI로 전사.
+    키 없으면 호출하지 않고 안내만 반환(증상은 텍스트로 입력 가능)."""
+    if not os.environ.get("OPENAI_API_KEY"):
+        return {"text": "", "error": "음성 인식은 OPENAI_API_KEY 가 필요합니다. 텍스트로 입력해 주세요."}
+    data = await audio.read()
+    if not data:
+        return {"text": "", "error": "녹음된 음성이 비어 있습니다."}
+    fname = audio.filename or "voice.webm"
+    try:
+        resp = _openai().audio.transcriptions.create(
+            model=STT_MODEL,
+            file=(fname, data, audio.content_type or "audio/webm"),
+            language="ko",
+        )
+        return {"text": (resp.text or "").strip(), "model": STT_MODEL}
+    except Exception as e:                       # API 오류·포맷 미지원 등
+        return {"text": "", "error": f"음성 인식 실패: {e}"}
 
 
 @app.get("/")

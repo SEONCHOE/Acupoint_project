@@ -272,3 +272,66 @@ document.getElementById("recommend-btn").addEventListener("click", recommend);
 document.getElementById("symptom-input").addEventListener("keydown", e=>{
   if(e.key==="Enter" && (e.metaKey||e.ctrlKey)) recommend();
 });
+
+// ---------- ① 음성 입력(STT): MediaRecorder -> /transcribe(Whisper) -> 증상칸 ----------
+// 브라우저별 컨테이너가 달라(크롬 webm/opus, iOS 사파리 mp4) 지원되는 첫 포맷을 고른다.
+let mediaRecorder = null, audioChunks = [], recording = false;
+const micBtn = document.getElementById("mic-btn");
+const micStatus = document.getElementById("mic-status");
+const setMicStatus = (t)=>{ micStatus.textContent = t || ""; };
+
+function pickMime(){
+  const cands = ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/ogg"];
+  for(const m of cands) if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  return "";
+}
+function extFor(type){
+  return type.includes("mp4") ? "mp4" : type.includes("ogg") ? "ogg" : "webm";
+}
+
+async function toggleMic(){
+  if(recording){ mediaRecorder && mediaRecorder.stop(); return; }      // 두 번째 클릭 = 종료
+  if(!navigator.mediaDevices || !window.MediaRecorder){
+    setMicStatus("이 브라우저는 음성 녹음을 지원하지 않습니다."); return;
+  }
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(e){
+    setMicStatus("마이크를 열 수 없습니다: " + e.message + " (HTTPS/localhost 필요)"); return;
+  }
+  const mime = pickMime();
+  mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  audioChunks = [];
+  mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size) audioChunks.push(e.data); };
+  mediaRecorder.onstop = async ()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    recording = false; micBtn.classList.remove("rec"); micBtn.textContent = "🎤 음성";
+    const type = (mediaRecorder.mimeType || mime || "audio/webm");
+    const blob = new Blob(audioChunks, { type });
+    if(!blob.size){ setMicStatus("녹음된 음성이 없습니다."); return; }
+    const fd = new FormData();
+    fd.append("audio", blob, "voice." + extFor(type));
+    micBtn.disabled = true; setMicStatus("음성 변환 중…");
+    try{
+      const res = await fetch("/transcribe", { method:"POST", body: fd });
+      const j = await res.json();
+      if(j.error){ setMicStatus(j.error); return; }
+      const t = (j.text || "").trim();
+      if(!t){ setMicStatus("인식된 음성이 없습니다. 다시 말씀해 주세요."); return; }
+      const ta = document.getElementById("symptom-input");
+      const prev = ta.value.trim();
+      ta.value = prev ? (prev + " " + t) : t;     // 기존 입력 뒤에 이어붙임
+      ta.focus();
+      setMicStatus("");
+    }catch(e){
+      setMicStatus("변환 실패: " + e.message);
+    }finally{
+      micBtn.disabled = false;
+    }
+  };
+  mediaRecorder.start();
+  recording = true; micBtn.classList.add("rec"); micBtn.textContent = "⏹ 종료";
+  setMicStatus("말씀하세요… (버튼을 다시 누르면 변환)");
+}
+micBtn.addEventListener("click", toggleMic);
