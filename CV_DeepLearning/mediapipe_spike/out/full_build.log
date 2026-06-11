@@ -1,0 +1,47 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1781053828.500964    5208 gl_context_egl.cc:85] Successfully initialized EGL. Major : 1 Minor: 5
+I0000 00:00:1781053828.517420    5223 gl_context.cc:385] GL version: 3.0 (OpenGL ES 3.0 Mesa 23.2.1-1ubuntu3.1~22.04.3), renderer: D3D12 (Intel(R) UHD Graphics 620)
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1781053828.546979    5214 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1781053828.584003    5216 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+[ekmoon] 그룹 2개, 처리 5665장 ...
+W0000 00:00:1781053828.990228    5216 landmark_projection_calculator.cc:78] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+[gwanchung] 그룹 2개, 처리 5507장 ...
+[hapgok] 그룹 2개, 처리 5477장 ...
+[hugye] 그룹 2개, 처리 5527장 ...
+[jungjer] 그룹 2개, 처리 5596장 ...
+[nogung] 그룹 2개, 처리 5364장 ...
+[sangyang] 그룹 2개, 처리 5648장 ...
+[shinmoom] 그룹 2개, 처리 1020장 ...
+[sochung] 그룹 2개, 처리 5287장 ...
+[sotack] 그룹 2개, 처리 5049장 ...
+[taeyeon] 그룹 2개, 처리 1170장 ...
+[urjae] 그룹 2개, 처리 3389장 ...
+
+===== 혈자리별 리포트 =====
+acup       hand_pos           n   det%   u_std   v_std
+ekmoon     dorsal_left     2778  91.7%   0.363   0.181
+ekmoon     dorsal_right    2887  81.6%   0.294   0.173
+gwanchung  dorsal_left     2708  91.7%   0.239   0.260
+gwanchung  dorsal_right    2799  81.5%   0.313   0.300
+hapgok     dorsal_left     2715  92.9%   1.040   0.856
+hapgok     dorsal_right    2762  83.1%   0.361   0.306
+hugye      dorsal_left     2729  92.0%   0.320   0.176
+hugye      dorsal_right    2798  83.8%   0.265   0.154
+jungjer    dorsal_left     2746  91.7%   0.356   0.177
+jungjer    dorsal_right    2850  82.0%   0.360   0.189
+nogung     dorsal_left     2592  99.6%   0.050   0.049
+nogung     dorsal_right    2772  98.1%   0.046   0.060
+sangyang   dorsal_left     2767  91.7%   0.707   0.744
+sangyang   dorsal_right    2881  81.7%   0.510   0.636
+sochung    dorsal_left     2608  91.6%   0.253   0.251
+sochung    dorsal_right    2679  81.0%   0.288   0.254
+sotack     dorsal_left     2346  91.1%   0.263   0.267
+sotack     dorsal_right    2703  81.4%   0.316   0.258
+taeyeon    dorsal_left      762 100.0%   0.080   0.072
+taeyeon    dorsal_right     408 100.0%   0.077   0.083
+urjae      dorsal_left     1398  99.9%   0.110   0.108
+urjae      dorsal_right    1991  99.7%   0.103   0.113
+
+학습 테이블: /mnt/c/Users/ssunn/OneDrive/Documents/GitHub/acupoint_project/CV_DeepLearning/mediapipe_spike/out/landmarks.csv
+리포트    : /mnt/c/Users/ssunn/OneDrive/Documents/GitHub/acupoint_project/CV_DeepLearning/mediapipe_spike/out/report.csv

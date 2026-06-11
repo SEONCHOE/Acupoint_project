@@ -29,6 +29,24 @@ checkpoints/
 *.pth.tar
 *.ckpt
 
+# ===== 대화/채팅 로그·기획 노트 (커밋 금지) =====
+conversation-*.txt
+claude_history_acupoint/
+기존앱개선안*.txt
+*개선전략*.txt
+*개선안*.txt
+.claude/settings.local.json
+
+# ===== 대용량/재생성 산출물 (별도 배포·재학습/재생성 가능) =====
+*.pdf
+*.task
+*.zip
+landmarks.csv
+CV_DeepLearning/LetsTrain*.ipynb
+CV_DeepLearning/mediapipe_spike/overlays/
+CV_DeepLearning/mediapipe_spike/out/demo/
+CV_DeepLearning/mediapipe_spike/out_full/
+
 # ===== Node / React (Acupuncture-Webapp) =====
 node_modules/
 /Acupuncture-Webapp/build/
