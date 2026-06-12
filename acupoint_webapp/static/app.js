@@ -215,6 +215,9 @@ document.getElementById("cam-btn").addEventListener("click", ()=>{
 });
 
 // ---------- ① 증상 -> 혈자리 ----------
+// 혈자리 상세의 출처 외부 링크(KMCRIC 경혈 DB). 콘텐츠는 저작권상 임베드/복제하지 않고 링크만.
+const KMCRIC_ACUPOINT_DB = "https://www.kmcric.com/database/acupoint";
+
 function renderResult(r){
   const el = document.getElementById("result");
   const disc = document.getElementById("disclaimer");
@@ -231,22 +234,61 @@ function renderResult(r){
   highlightCodes = new Set(list.filter(a=>a.has_cv_model).map(a=>a.code));
   const cvCount = highlightCodes.size;
 
-  let html = `<p class="advice">${r.advice}</p>`;
+  const SEV = { low:"가벼운 정도", medium:"중간 정도", high:"심한 정도", emergency:"응급" };
+  const sevLabel = SEV[r.severity] || "보통";
+
+  let html = "";
   if(list.length){
-    html += `<div class="acup-list">` + list.map(a=>`
-      <div class="acup">
-        <span class="name">${a.acupoint||a.name_kr||""}</span>
-        <span class="code">${a.code}</span>
-        ${a.has_cv_model?'<span class="badge cv">손 위 표시</span>':''}
-        <span class="for">${a.for_symptom||""}</span>
-      </div>`).join("") + `</div>`;
+    html += `<p class="result-intro">말씀해주신 증상은 <strong>${sevLabel}</strong>(으)로
+      평가됩니다. 본 증상을 관리할 수 있는 아래 혈자리를 추천드립니다.</p>`;
+  }
+  html += `<p class="advice">${r.advice}</p>`;
+  if(list.length){
+    html += `<div class="acup-list">` + list.map((a, i)=>{
+      const name = a.acupoint || a.name_kr || "";
+      const treats = (a.treats || []).filter(Boolean).join(", ");
+      const rows = [];
+      if(a.position) rows.push(`<div class="d-row"><dt>위치</dt><dd>${a.position}</dd></div>`);
+      if(a.meridian) rows.push(`<div class="d-row"><dt>경락</dt><dd>${a.meridian}</dd></div>`);
+      if(treats)     rows.push(`<div class="d-row"><dt>주치</dt><dd>${treats}</dd></div>`);
+      rows.push(`<div class="d-row"><dt>코드</dt><dd class="mono">${a.code}</dd></div>`);
+      // 출처: KMCRIC 경혈 DB(저작권 All Rights Reserved) — 크롤링 대신 해당 DB로 외부 링크
+      const mer = a.meridian ? `${a.meridian}(${a.code.replace(/[0-9]+$/,"")}) ` : "";
+      rows.push(`<div class="d-row"><dt>자세히</dt><dd>
+        <a class="ext" href="${KMCRIC_ACUPOINT_DB}" target="_blank" rel="noopener noreferrer"
+          >KMCRIC 경혈 DB에서 ${mer}«${name}» 보기 ↗</a></dd></div>`);
+      return `<div class="acup-item">
+        <div class="acup" role="button" tabindex="0" aria-expanded="false" data-i="${i}">
+          <span class="name">${name}</span>
+          <span class="code">${a.code}</span>
+          ${a.has_cv_model?'<span class="badge cv">손 위 표시</span>':''}
+          <span class="for">${a.for_symptom||""}</span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </div>
+        <div class="acup-detail" hidden><dl>${rows.join("")}</dl></div>
+      </div>`;
+    }).join("") + `</div>`;
     if(cvCount) html += `<p class="muted small" style="margin-top:10px">
-      손 위 표시 가능한 혈자리 ${cvCount}개 — 오른쪽에서 카메라로 손을 비추면 강조됩니다.</p>`;
+      손 위 표시 가능한 혈자리 ${cvCount}개 — 카메라로 손을 비추면 강조됩니다. 각 혈자리를 누르면 상세가 펼쳐져요.</p>`;
   }
   if(r.symptoms && r.symptoms.length)
     html += `<p class="muted small">인식된 증상: ${r.symptoms.join(", ")}</p>`;
   html += `<p class="provider">분석 모델: ${r.provider}${r.used_mock?" (mock·무과금)":""}</p>`;
   el.innerHTML = html;
+
+  // 혈자리 클릭/키보드 -> 위치·경락·주치 상세 토글
+  el.querySelectorAll(".acup[data-i]").forEach(row=>{
+    const toggle = ()=>{
+      const item = row.closest(".acup-item");
+      const open = item.classList.toggle("open");
+      row.setAttribute("aria-expanded", open ? "true" : "false");
+      item.querySelector(".acup-detail").hidden = !open;
+    };
+    row.addEventListener("click", toggle);
+    row.addEventListener("keydown", e=>{
+      if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toggle(); }
+    });
+  });
 }
 
 async function recommend(){

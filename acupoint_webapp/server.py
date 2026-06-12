@@ -112,4 +112,10 @@ def index():
     return FileResponse(os.path.join(STATIC, "index.html"))
 
 
+@app.get("/art")
+def index_art():
+    """아티스틱 에디션(經穴 · 먹 & 주사). 세련된 기본 버전과 app.js·백엔드 공유."""
+    return FileResponse(os.path.join(STATIC, "index-art.html"))
+
+
 app.mount("/", StaticFiles(directory=STATIC), name="static")

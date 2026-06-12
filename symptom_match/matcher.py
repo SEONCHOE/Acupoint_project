@@ -19,6 +19,13 @@ class SymptomMatcher:
         self.kb = json.load(open(kb_path, encoding="utf-8"))
         self.provider = provider
         self.cv = set(self.kb["cv_acupoints"])
+        # 주치(主治) 역인덱스: 혈자리 코드 -> 이 혈자리가 다루는 증상들(KB 매핑 기반)
+        self.treats: dict[str, list] = {}
+        for sym, acs in self.kb["symptom_to_acupoints"].items():
+            for a in acs:
+                lst = self.treats.setdefault(a["code"], [])
+                if sym not in lst:
+                    lst.append(sym)
 
     def match(self, user_text: str) -> dict:
         cls = self.provider.classify(user_text, self.kb["symptoms"])
@@ -40,7 +47,8 @@ class SymptomMatcher:
                     continue
                 seen.add(a["code"])
                 acupoints.append({**a, "has_cv_model": a["code"] in self.cv,
-                                  "for_symptom": s})
+                                  "for_symptom": s,
+                                  "treats": self.treats.get(a["code"], [])})
         # 손 이미지 오버레이(②) 가능한 혈자리를 앞으로
         acupoints.sort(key=lambda a: (not a["has_cv_model"], a["code"]))
 

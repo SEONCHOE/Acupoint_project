@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>손을 주시오, 혈을 잡겠오 — 經穴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style-art.css" />
+</head>
+<body>
+<div class="flow">
+
+  <!-- ░░░ HERO ░░░ -->
+  <header class="hero">
+    <div class="rail">
+      <span class="node node-start" aria-hidden="true"></span>
+      <span class="rail-stamp mono" aria-hidden="true">起</span>
+    </div>
+    <div class="hero-content">
+      <div class="hero-kicker">
+        <span class="mono-label">經穴 · MERIDIAN POINTS</span>
+        <span class="tag">연구 데모</span>
+      </div>
+      <h1 class="display">손을 주시오,<br><span class="accent">혈을 잡겠오.</span></h1>
+      <p class="lead">증상을 적으면 알맞은 혈자리를 찾아드리고, 카메라로 손을 비추면
+        그 위에 실시간으로 짚어 드려요.
+        <strong>의료행위가 아닌 자가관리 참고용입니다.</strong></p>
+      <div class="hero-meta mono">혈자리 자가지압 도우미 &nbsp;·&nbsp; ON-DEVICE AR &nbsp;·&nbsp; 自家指壓</div>
+    </div>
+    <span class="hanja" aria-hidden="true">經</span>
+  </header>
+
+  <!-- ░░░ 01 — 증상 ░░░ -->
+  <section class="block block-paper" id="symptom-panel">
+    <div class="rail">
+      <span class="node" aria-hidden="true"></span>
+      <span class="numeral">一</span>
+      <span class="m-en mono">01</span>
+    </div>
+    <div class="block-inner">
+      <div class="block-head">
+        <h2>증상 적어보기</h2>
+        <span class="mono-label">SYMPTOM · 證</span>
+      </div>
+      <textarea id="symptom-input" rows="3"
+        placeholder="예) 머리가 지끈거리고 속이 메스꺼워요"></textarea>
+      <div class="row">
+        <button id="recommend-btn">혈자리 찾기</button>
+        <button id="mic-btn" class="mic" title="음성으로 증상 입력 (다시 누르면 종료)">🎤 음성</button>
+        <span id="mic-status" class="muted small"></span>
+        <label class="mock-toggle" title="API 과금 없이 규칙기반으로 테스트">
+          <input type="checkbox" id="mock-chk" /> 무과금(mock)
+        </label>
+      </div>
+      <div id="result">
+        <div class="result-empty">
+          <span class="point" aria-hidden="true"></span>
+          <span>증상을 입력하고 <strong>혈자리 찾기</strong>를 누르면, 여기에 알맞은 혈자리가
+            나타나요. 부드럽게 3~5초씩 눌러 자극해 보세요.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░░ 02 — 손 위 표시 ░░░ -->
+  <section class="block block-ink" id="cam-panel">
+    <div class="rail">
+      <span class="node" aria-hidden="true"></span>
+      <span class="numeral">二</span>
+      <span class="m-en mono">02</span>
+    </div>
+    <div class="block-inner">
+      <div class="block-head block-head-ink">
+        <h2>손에 실시간으로 표시</h2>
+        <span class="mono-label mono-label-ink">AR OVERLAY · 手</span>
+      </div>
+      <div class="cam-wrap">
+        <video id="cam" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <span class="cam-tag mono" aria-hidden="true"><span class="live"></span>AR · 經穴 LIVE</span>
+        <div id="cam-msg" class="cam-msg">‘카메라 시작’을 눌러 손을 비춰주세요.</div>
+        <div class="cam-frame" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="row">
+        <button id="cam-btn">카메라 시작</button>
+        <span id="cam-status" class="muted"></span>
+      </div>
+      <p class="cam-help">손 전체가 화면에 들어오게, 밝은 곳에서 비추면 인식이 잘 돼요.
+        추천 혈자리 중 <span class="cv-dot"></span>표시된 혈자리가 손 위에 강조됩니다.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer id="disclaimer"></footer>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

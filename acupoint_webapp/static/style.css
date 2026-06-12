@@ -283,6 +283,15 @@ button.mic.rec{
   background:var(--accent);
 }
 
+/* 증상 평가 안내문 */
+.result-intro{
+  font-size:14.5px;
+  line-height:1.72;
+  margin:2px 0 14px;
+  color:var(--ink);
+}
+.result-intro strong{ color:var(--accent-d); font-weight:600; }
+
 .advice{
   font-size:15px;
   line-height:1.72;
@@ -349,6 +358,36 @@ button.mic.rec{
   text-align:right;
   white-space:nowrap;
 }
+.acup{ cursor:pointer; }
+.acup .chev{
+  flex:none;
+  margin-left:8px;
+  color:var(--ink-3);
+  font-size:12px;
+  transition:transform .15s, color .15s;
+}
+.acup-item.open .acup{
+  border-color:var(--accent);
+  border-bottom-left-radius:0;
+  border-bottom-right-radius:0;
+}
+.acup-item.open .chev{ transform:rotate(180deg); color:var(--accent); }
+
+/* 혈자리 상세(클릭 시 펼침) — 위치·경락·주치 */
+.acup-detail{
+  padding:14px 16px;
+  background:var(--card-2);
+  border:1px solid var(--line);
+  border-top:0;
+  border-radius:0 0 var(--radius-sm) var(--radius-sm);
+}
+.acup-detail dl{ margin:0; display:grid; gap:9px; }
+.acup-detail .d-row{ display:grid; grid-template-columns:52px 1fr; gap:12px; align-items:baseline; }
+.acup-detail dt{ color:var(--ink-2); font-size:12.5px; font-weight:600; }
+.acup-detail dd{ margin:0; color:var(--ink); font-size:13.5px; line-height:1.6; }
+.acup-detail dd.mono{ font-family:ui-monospace,"SFMono-Regular",Menlo,monospace; font-size:12.5px; color:var(--ink-2); }
+.acup-detail a.ext{ color:var(--accent-d); font-weight:600; text-decoration:none; border-bottom:1px solid var(--accent-soft); }
+.acup-detail a.ext:hover{ border-bottom-color:var(--accent); }
 
 /* 손 위 표시 배지 (세이지) */
 .badge{
