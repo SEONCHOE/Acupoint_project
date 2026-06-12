@@ -3,46 +3,67 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>혈자리 자가지압 도우미 (데모)</title>
+<title>손을 주시오, 혈을 잡겠오</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
 <header>
-  <h1>혈자리 자가지압 도우미 <span class="tag">연구 데모</span></h1>
-  <p class="sub">증상을 적으면 혈자리를 찾아주고, 카메라로 손을 비추면 그 위에 실시간으로 표시합니다.
+  <div class="kicker">
+    <span class="kicker-name">혈자리 자가지압 도우미</span>
+    <span class="tag">연구 데모</span>
+  </div>
+  <h1>손을 주시오, 혈을 잡겠오</h1>
+  <p class="sub">증상을 적으면 알맞은 혈자리를 찾아드리고, 카메라로 손을 비추면 그 위에 실시간으로 짚어 드려요.
     <strong>의료행위가 아닌 자가관리 참고용입니다.</strong></p>
 </header>
+<div class="header-rule"><div></div></div>
 
 <main>
   <!-- ① 증상 -> 혈자리 -->
   <section class="panel" id="symptom-panel">
-    <h2>① 증상 입력</h2>
+    <div class="panel-head">
+      <span class="step">01</span>
+      <h2>증상 적어보기</h2>
+    </div>
     <textarea id="symptom-input" rows="3"
       placeholder="예) 머리가 지끈거리고 속이 메스꺼워요"></textarea>
     <div class="row">
-      <button id="recommend-btn">혈자리 추천</button>
+      <button id="recommend-btn">혈자리 찾기</button>
       <button id="mic-btn" class="mic" title="음성으로 증상 입력 (다시 누르면 종료)">🎤 음성</button>
       <span id="mic-status" class="muted small"></span>
       <label class="mock-toggle" title="API 과금 없이 규칙기반으로 테스트">
         <input type="checkbox" id="mock-chk" /> 무과금(mock)
       </label>
     </div>
-    <div id="result"></div>
+    <div id="result">
+      <div class="result-empty">
+        <span class="point" aria-hidden="true"></span>
+        <span>증상을 입력하고 <strong>혈자리 찾기</strong>를 누르면, 여기에 알맞은 혈자리가 나타나요.
+          부드럽게 3~5초씩 눌러 자극해 보세요.</span>
+      </div>
+    </div>
   </section>
 
   <!-- ② 손 위 실시간 오버레이 -->
   <section class="panel" id="cam-panel">
-    <h2>② 손에 실시간 표시</h2>
+    <div class="panel-head">
+      <span class="step">02</span>
+      <h2>손에 실시간으로 표시</h2>
+    </div>
     <div class="cam-wrap">
       <video id="cam" playsinline muted></video>
       <canvas id="overlay"></canvas>
       <div id="cam-msg" class="cam-msg">‘카메라 시작’을 눌러 손을 비춰주세요.</div>
+      <div class="cam-frame" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     </div>
     <div class="row">
       <button id="cam-btn">카메라 시작</button>
       <span id="cam-status" class="muted"></span>
     </div>
-    <p class="muted small">손 전체가 보이게, 밝은 곳에서 비추면 인식률이 높습니다.
+    <p class="cam-help">손 전체가 화면에 들어오게, 밝은 곳에서 비추면 인식이 잘 돼요.
       추천 혈자리 중 <span class="cv-dot"></span>표시된 혈자리가 손 위에 강조됩니다.</p>
   </section>
 </main>

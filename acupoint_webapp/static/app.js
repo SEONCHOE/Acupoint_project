@@ -88,21 +88,21 @@ function computeAcupoints(lmPx){
 function draw(lmPx, acupoints){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   // 뼈대
-  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(120,170,255,.7)";
+  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(150,148,138,.78)";
   for(const [a,b] of HAND_CONNECTIONS){
     ctx.beginPath(); ctx.moveTo(lmPx[a].x,lmPx[a].y); ctx.lineTo(lmPx[b].x,lmPx[b].y); ctx.stroke();
   }
   // 랜드마크 점
-  ctx.fillStyle = "rgba(120,170,255,.9)";
+  ctx.fillStyle = "rgba(150,148,138,.92)";
   for(const p of lmPx){ ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,7); ctx.fill(); }
   // 혈자리
   for(const ap of acupoints){
     const hi = highlightCodes.has(ap.code);
     ctx.beginPath();
     ctx.arc(ap.x, ap.y, hi?9:5, 0, 7);
-    ctx.fillStyle = hi ? "#33d6a6" : "rgba(255,255,255,.55)";
+    ctx.fillStyle = hi ? "#2f9d62" : "rgba(255,255,255,.6)";
     ctx.fill();
-    ctx.lineWidth = hi?3:1.5; ctx.strokeStyle = hi?"#0c3b2e":"rgba(0,0,0,.6)"; ctx.stroke();
+    ctx.lineWidth = hi?3:1.5; ctx.strokeStyle = hi?"#103d28":"rgba(0,0,0,.6)"; ctx.stroke();
     if(hi){
       ctx.font = "bold 13px system-ui"; ctx.fillStyle="#eafff6";
       ctx.strokeStyle="rgba(0,0,0,.85)"; ctx.lineWidth=3;
@@ -265,7 +265,7 @@ async function recommend(){
     document.getElementById("result").innerHTML =
       `<div class="emergency"><h3>오류</h3><p>서버 연결 실패: ${e.message}</p></div>`;
   }finally{
-    btn.disabled = false; btn.textContent = "혈자리 추천";
+    btn.disabled = false; btn.textContent = "혈자리 찾기";
   }
 }
 document.getElementById("recommend-btn").addEventListener("click", recommend);
