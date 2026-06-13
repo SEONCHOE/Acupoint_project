@@ -389,6 +389,32 @@ button.mic.rec{
 .acup-detail a.ext{ color:var(--accent-d); font-weight:600; text-decoration:none; border-bottom:1px solid var(--accent-soft); }
 .acup-detail a.ext:hover{ border-bottom-color:var(--accent); }
 
+/* 손 위치도(자체 제작 SVG) */
+.hand-map{ margin:0 0 14px; }
+.handmap-svg{ width:150px; height:auto; display:block; background:#fffefb;
+  border:1px solid var(--line); border-radius:10px; padding:6px;
+  --hm-skin:#f3e7d4; --hm-edge:#d8c4a8; }
+/* 손 실루엣: edge(테두리, 살짝 두껍게 뒤) + fill(살색, 위) */
+.handmap-svg .hm-blob, .handmap-svg .hm-line{ stroke-linecap:round; stroke-linejoin:round; }
+.handmap-svg .hm-line{ fill:none; }
+.handmap-svg .hm-edge{ stroke:var(--hm-edge); }
+.handmap-svg .hm-edge.hm-blob{ fill:var(--hm-edge); }
+.handmap-svg .hm-fill{ stroke:var(--hm-skin); }
+.handmap-svg .hm-fill.hm-blob{ fill:var(--hm-skin); }
+/* 손등 손톱 */
+.handmap-svg .hm-nail{ fill:#fff6e9; stroke:var(--hm-edge); stroke-width:1; }
+/* 손바닥/손등 면 라벨 */
+.handmap-svg .hm-side{ fill:var(--ink-2); font:600 11px "Noto Sans KR",system-ui,sans-serif;
+  paint-order:stroke; stroke:#fff8ec; stroke-width:2.6; }
+/* 혈자리 점(살 위) */
+.handmap-svg .acu{ fill:var(--ink-3); opacity:.6; stroke:#fff8ec; stroke-width:.6; }
+.handmap-svg .acu.hi{ fill:var(--accent); opacity:1; stroke:#fff; stroke-width:1; }
+.handmap-svg .lab{ fill:var(--accent-d); font:600 11px "Noto Sans KR",system-ui,sans-serif;
+  paint-order:stroke; stroke:#fff8ec; stroke-width:2.4; }
+.handmap-cap{ margin:7px 0 0; font-size:11.5px; color:var(--ink-3); line-height:1.5; }
+.handmap-cap b{ color:var(--ink-2); }
+.handmap-load{ font-size:12px; color:var(--ink-3); }
+
 /* 손 위 표시 배지 (세이지) */
 .badge{
   font-size:11px;

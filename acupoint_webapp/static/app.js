@@ -218,6 +218,123 @@ document.getElementById("cam-btn").addEventListener("click", ()=>{
 // 혈자리 상세의 출처 외부 링크(KMCRIC 경혈 DB). 콘텐츠는 저작권상 임베드/복제하지 않고 링크만.
 const KMCRIC_ACUPOINT_DB = "https://www.kmcric.com/database/acupoint";
 
+// ----- 손 위치도(자체 제작): 표준 손 모형 21랜드마크에 M2로 11혈을 계산해 SVG로 그림 -----
+// 외부 이미지/저작물 없이 우리 모델 출력만 렌더 → 라이선스 무관, 실시간 AR과 좌표 일치.
+// MediaPipe 인덱스 순서(0 손목 … 4 엄지끝 … 20 새끼끝)의 정규화(0~1) 펼친 오른손 포즈.
+const TEMPLATE_LANDMARKS = [
+  [0.50,0.95],                                  // 0 wrist
+  [0.36,0.86],[0.28,0.77],[0.23,0.69],[0.19,0.62], // 1-4 thumb
+  [0.43,0.56],[0.41,0.43],[0.40,0.34],[0.39,0.26], // 5-8 index
+  [0.52,0.54],[0.52,0.39],[0.52,0.29],[0.52,0.20], // 9-12 middle
+  [0.61,0.56],[0.63,0.43],[0.64,0.34],[0.65,0.26], // 13-16 ring
+  [0.70,0.60],[0.74,0.50],[0.76,0.43],[0.78,0.37], // 17-20 pinky
+];
+
+async function ensureM2(){
+  if(!M2) M2 = await (await fetch("/m2_weights.json")).json();
+  return M2;
+}
+
+// 혈자리별 손 면(해부학 기준): 손바닥(palmar) vs 손등(dorsal).
+// 손바닥: 노궁(PC8)·어제(LU10)·태연(LU9). 나머지(합곡·중저·액문·후계, 손톱 옆 정혈)는 손등.
+const ACU_SIDE = {
+  LU9:"palmar", LU10:"palmar", PC8:"palmar",
+  LI4:"dorsal", TE2:"dorsal", TE3:"dorsal", SI3:"dorsal",
+  LI1:"dorsal", SI1:"dorsal", HT9:"dorsal", TE1:"dorsal",
+};
+
+const HM_CHAINS = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+const HM_NAIL_TIPS = [4,8,12,16,20];
+
+// 닫힌 점들을 Catmull-Rom 으로 부드럽게 잇는 path d (손바닥 윤곽을 매끄럽게).
+function smoothClosed(pts){
+  const n = pts.length;
+  let d = `M${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for(let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d += `C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d + "Z";
+}
+
+const HM_PALM_INFLATE = 1.09;   // 손바닥을 중심에서 바깥으로 확장(도톰)
+const HM_PALM_FAT = 11;         // 손바닥 실루엣을 손가락보다 더 굵게
+
+// 손바닥 둘레점을 중심에서 바깥으로 확장 → 도톰한 손바닥.
+function inflatePalm(pts){
+  const cx = pts.reduce((s,p)=>s+p.x, 0) / pts.length;
+  const cy = pts.reduce((s,p)=>s+p.y, 0) / pts.length;
+  return pts.map(p => ({ x:cx+(p.x-cx)*HM_PALM_INFLATE, y:cy+(p.y-cy)*HM_PALM_INFLATE }));
+}
+
+// 손바닥 둘레점. 새끼관절~손목 사이에 소지구(hypothenar) 융기점 2개를 끼워
+// 척측(새끼쪽) 가장자리를 부드럽게 부풀린다. 융기는 후계(SI3) 좌표 바깥으로 잡아 확실히 감싼다.
+function palmOutline(lm, ulnar){
+  let hiHypo, loHypo;
+  if(ulnar){                                   // SI3 기준: 바깥(+x)으로 충분히 밀어 감쌈
+    hiHypo = { x: ulnar.x + 12, y: ulnar.y - 14 };  // 새끼관절 쪽(위)
+    loHypo = { x: ulnar.x + 15, y: ulnar.y + 12 };  // 손목 쪽(아래)
+  }else{
+    hiHypo = { x: lm[17].x + (lm[17].x-lm[13].x)*0.6, y: lm[17].y + (lm[0].y-lm[17].y)*0.22 };
+    loHypo = { x: lm[17].x + (lm[17].x-lm[13].x)*0.72, y: lm[17].y + (lm[0].y-lm[17].y)*0.46 };
+  }
+  return [lm[0], lm[1], lm[5], lm[9], lm[13], lm[17], hiHypo, loHypo];
+}
+
+// 손 실루엣 한 겹(손바닥 베지에 blob + 손가락/엄지 둥근 캡슐). kind: "edge"(테두리)|"fill"(살).
+// 손바닥은 손가락보다 더 굵게(+FAT) 그려 도톰하게. palm 은 미리 계산한 둘레점(inflate 포함).
+function handSilhouette(palm, lm, w, kind){
+  let s = `<path class="hm-${kind} hm-blob" d="${smoothClosed(palm)}" stroke-width="${w + HM_PALM_FAT}"/>`;
+  for(const ch of HM_CHAINS){
+    const d = "M" + ch.map(i => `${lm[i].x.toFixed(1)} ${lm[i].y.toFixed(1)}`).join(" L");
+    s += `<path class="hm-${kind} hm-line" d="${d}" stroke-width="${w}"/>`;
+  }
+  return s;
+}
+
+// 손등용 손톱: 손가락 끝마디 축에 맞춘 작은 타원.
+function handNails(lm){
+  let s = "";
+  for(const i of HM_NAIL_TIPS){
+    const tip = lm[i], prev = lm[i-1];
+    const cx = tip.x*0.62 + prev.x*0.38, cy = tip.y*0.62 + prev.y*0.38;
+    const ang = Math.atan2(tip.y-prev.y, tip.x-prev.x) * 180/Math.PI + 90;
+    s += `<ellipse class="hm-nail" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="4.6" ry="6.2"`
+       + ` transform="rotate(${ang.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;
+  }
+  return s;
+}
+
+// code(예: "LU10") 혈자리를 강조한 손 위치도 SVG 문자열. M2 가 로드돼 있어야 함.
+function buildHandMap(code){
+  const W = 200, H = 210, FW = 16;     // FW: 손가락 굵기
+  const lm = TEMPLATE_LANDMARKS.map(([x,y]) => ({ x:x*W, y:y*H }));
+  const aps = computeAcupoints(lm);
+  const side = ACU_SIDE[code] || "palmar";
+  const sideKr = side === "dorsal" ? "손등" : "손바닥";
+  const si3 = aps.find(a => a.code === "SI3");      // 척측 경계혈 → 소지구 융기 기준점
+  const palm = inflatePalm(palmOutline(lm, si3));
+  const skin = handSilhouette(palm, lm, FW + 3, "edge") + handSilhouette(palm, lm, FW, "fill");
+  const nailLayer = side === "dorsal" ? handNails(lm) : "";
+  let acu = "", lab = "";
+  for(const ap of aps){
+    if((ACU_SIDE[ap.code] || "palmar") !== side) continue;   // 같은 면의 혈자리만 표시
+    const hi = ap.code === code;
+    acu += `<circle class="acu${hi?' hi':''}" cx="${ap.x.toFixed(1)}" cy="${ap.y.toFixed(1)}" r="${hi?5:3}"/>`;
+    if(hi){
+      const right = ap.x > W/2;
+      lab = `<text class="lab" x="${(right?ap.x-8:ap.x+8).toFixed(1)}" y="${(ap.y-8).toFixed(1)}"
+        text-anchor="${right?'end':'start'}">${ap.name_kr} ${ap.code}</text>`;
+    }
+  }
+  const badge = `<text class="hm-side" x="10" y="17">${sideKr} 면</text>`;
+  return `<svg viewBox="0 0 ${W} ${H + 20}" class="handmap-svg" role="img" aria-label="${code} ${sideKr} 개략 위치">`
+    + skin + nailLayer + acu + lab + badge + `</svg>`
+    + `<p class="handmap-cap">손 <b>${sideKr}</b> 쪽 개략 위치예요(실시간 AR과 동일 모델). 정확한 취혈은 전문가 확인이 필요합니다.</p>`;
+}
+
 function renderResult(r){
   const el = document.getElementById("result");
   const disc = document.getElementById("disclaimer");
@@ -257,6 +374,9 @@ function renderResult(r){
       rows.push(`<div class="d-row"><dt>자세히</dt><dd>
         <a class="ext" href="${KMCRIC_ACUPOINT_DB}" target="_blank" rel="noopener noreferrer"
           >KMCRIC 경혈 DB에서 ${mer}«${name}» 보기 ↗</a></dd></div>`);
+      // 손 위치도는 CV 모델이 있는(11혈) 혈자리만 — 클릭 시 지연 렌더
+      const mapBox = a.has_cv_model
+        ? `<div class="hand-map" data-code="${a.code}" aria-label="${name} 손 위 개략 위치"></div>` : "";
       return `<div class="acup-item">
         <div class="acup" role="button" tabindex="0" aria-expanded="false" data-i="${i}">
           <span class="name">${name}</span>
@@ -265,7 +385,7 @@ function renderResult(r){
           <span class="for">${a.for_symptom||""}</span>
           <span class="chev" aria-hidden="true">▾</span>
         </div>
-        <div class="acup-detail" hidden><dl>${rows.join("")}</dl></div>
+        <div class="acup-detail" hidden>${mapBox}<dl>${rows.join("")}</dl></div>
       </div>`;
     }).join("") + `</div>`;
     if(cvCount) html += `<p class="muted small" style="margin-top:10px">
@@ -276,13 +396,22 @@ function renderResult(r){
   html += `<p class="provider">분석 모델: ${r.provider}${r.used_mock?" (mock·무과금)":""}</p>`;
   el.innerHTML = html;
 
-  // 혈자리 클릭/키보드 -> 위치·경락·주치 상세 토글
+  // 혈자리 클릭/키보드 -> 위치·경락·주치 상세 토글 + 손 위치도 지연 렌더
   el.querySelectorAll(".acup[data-i]").forEach(row=>{
-    const toggle = ()=>{
+    const toggle = async ()=>{
       const item = row.closest(".acup-item");
+      const det = item.querySelector(".acup-detail");
       const open = item.classList.toggle("open");
       row.setAttribute("aria-expanded", open ? "true" : "false");
-      item.querySelector(".acup-detail").hidden = !open;
+      det.hidden = !open;
+      if(!open) return;
+      const map = det.querySelector(".hand-map[data-code]");
+      if(map && !map.dataset.done){
+        map.dataset.done = "1";
+        map.innerHTML = `<span class="handmap-load">손 위치도 불러오는 중…</span>`;
+        try{ await ensureM2(); map.innerHTML = buildHandMap(map.dataset.code); }
+        catch(e){ map.innerHTML = `<span class="handmap-load">위치도를 불러오지 못했습니다.</span>`; }
+      }
     };
     row.addEventListener("click", toggle);
     row.addEventListener("keydown", e=>{
