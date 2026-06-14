@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>손 위치도 QA — 11혈 한눈에</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&family=Noto+Serif+KR:wght@600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+<style>
+  body{ background:var(--paper); padding:22px; }
+  h1{ font:700 20px "Noto Serif KR",serif; margin:0 0 4px; }
+  .note{ color:var(--ink-2); font-size:13px; margin:0 0 18px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; max-width:1100px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  .card h3{ font:600 15px "Noto Serif KR",serif; margin:0 0 2px; }
+  .card .meta{ font-size:12px; color:var(--ink-2); margin:0 0 8px; font-family:ui-monospace,monospace; }
+  .card .handmap-svg{ width:100%; }
+</style>
+</head>
+<body>
+<h1>손 위치도 QA — 11혈 한눈에</h1>
+<p class="note">app.js 와 동일한 모델·기하로 렌더한 검증용 페이지입니다(카메라 불필요). 후계(SI3)가 손바닥 안에 들어왔는지 확인하세요.</p>
+<div class="grid" id="grid"></div>
+
+<script type="module">
+// ===== app.js 의 순수 기하 함수 미러(QA 전용) =====
+let M2 = null;
+const WRIST=0, INDEX_MCP=5, MIDDLE_MCP=9, PINKY_MCP=17;
+const HAND_CONNECTIONS=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+function relu(v){for(let i=0;i<v.length;i++)if(v[i]<0)v[i]=0;return v;}
+function dense(x,W,b,act){const out=new Float64Array(b.length);for(let j=0;j<b.length;j++){let s=b[j];for(let i=0;i<x.length;i++)s+=x[i]*W[i][j];out[j]=s;}return act==="relu"?relu(out):out;}
+function m2forward(f){const sc=M2.scaler;const x=new Float64Array(f.length);for(let i=0;i<x.length;i++)x[i]=(f[i]-sc.mean[i])/sc.scale[i];let h=x;for(const L of M2.layers)h=dense(h,L.W,L.b,L.act);return h;}
+function computeAcupoints(lmPx){
+  const o=lmPx[WRIST];const r={x:lmPx[MIDDLE_MCP].x-o.x,y:lmPx[MIDDLE_MCP].y-o.y};
+  const s=Math.max(Math.hypot(r.x,r.y),1e-6);const e1={x:r.x/s,y:r.y/s};let e2={x:-e1.y,y:e1.x};
+  const vi={x:lmPx[INDEX_MCP].x-o.x,y:lmPx[INDEX_MCP].y-o.y},vp={x:lmPx[PINKY_MCP].x-o.x,y:lmPx[PINKY_MCP].y-o.y};
+  if(vi.x*vp.y-vi.y*vp.x<0)e2={x:-e2.x,y:-e2.y};
+  const canon=new Float64Array(42);
+  for(let i=0;i<21;i++){const dx=lmPx[i].x-o.x,dy=lmPx[i].y-o.y;canon[i*2]=(dx*e1.x+dy*e1.y)/s;canon[i*2+1]=(dx*e2.x+dy*e2.y)/s;}
+  const out=[];for(let i=0;i<M2.acups.length;i++){const feat=new Float64Array(53);feat.set(canon,0);feat[42+i]=1;
+    const[cx,cy]=m2forward(feat);const px=o.x+s*(cx*e1.x+cy*e2.x),py=o.y+s*(cx*e1.y+cy*e2.y);
+    const a=M2.acups[i],meta=M2.meta[a];out.push({name:a,name_kr:meta.name_kr,code:meta.code,x:px,y:py});}
+  return out;
+}
+const ACU_SIDE={LU9:"palmar",LU10:"palmar",PC8:"palmar",LI4:"dorsal",TE2:"dorsal",TE3:"dorsal",SI3:"dorsal",LI1:"dorsal",SI1:"dorsal",HT9:"dorsal",TE1:"dorsal"};
+const TEMPLATE_LANDMARKS=[[0.50,0.95],[0.36,0.86],[0.28,0.77],[0.23,0.69],[0.19,0.62],[0.43,0.56],[0.41,0.43],[0.40,0.34],[0.39,0.26],[0.52,0.54],[0.52,0.39],[0.52,0.29],[0.52,0.20],[0.61,0.56],[0.63,0.43],[0.64,0.34],[0.65,0.26],[0.70,0.60],[0.74,0.50],[0.76,0.43],[0.78,0.37]];
+const HM_CHAINS=[[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+const HM_NAIL_TIPS=[4,8,12,16,20];
+const HM_PALM_INFLATE=1.09, HM_PALM_FAT=11;
+function smoothClosed(pts){const n=pts.length;let d=`M${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];
+  const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6,c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+  d+=`C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;}return d+"Z";}
+function inflatePalm(pts){const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length,cy=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+  return pts.map(p=>({x:cx+(p.x-cx)*HM_PALM_INFLATE,y:cy+(p.y-cy)*HM_PALM_INFLATE}));}
+function palmOutline(lm,ulnar){let hiHypo,loHypo;
+  if(ulnar){hiHypo={x:ulnar.x+12,y:ulnar.y-14};loHypo={x:ulnar.x+15,y:ulnar.y+12};}
+  else{hiHypo={x:lm[17].x+(lm[17].x-lm[13].x)*0.6,y:lm[17].y+(lm[0].y-lm[17].y)*0.22};loHypo={x:lm[17].x+(lm[17].x-lm[13].x)*0.72,y:lm[17].y+(lm[0].y-lm[17].y)*0.46};}
+  return [lm[0],lm[1],lm[5],lm[9],lm[13],lm[17],hiHypo,loHypo];}
+function handSilhouette(palm,lm,w,kind){let s=`<path class="hm-${kind} hm-blob" d="${smoothClosed(palm)}" stroke-width="${w+HM_PALM_FAT}"/>`;
+  for(const ch of HM_CHAINS){const d="M"+ch.map(i=>`${lm[i].x.toFixed(1)} ${lm[i].y.toFixed(1)}`).join(" L");s+=`<path class="hm-${kind} hm-line" d="${d}" stroke-width="${w}"/>`;}return s;}
+function handNails(lm){let s="";for(const i of HM_NAIL_TIPS){const tip=lm[i],prev=lm[i-1];const cx=tip.x*0.62+prev.x*0.38,cy=tip.y*0.62+prev.y*0.38;
+  const ang=Math.atan2(tip.y-prev.y,tip.x-prev.x)*180/Math.PI+90;
+  s+=`<ellipse class="hm-nail" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="4.6" ry="6.2" transform="rotate(${ang.toFixed(1)} ${cx.toFixed(1)} ${cy.toFixed(1)})"/>`;}return s;}
+function buildHandMap(code){
+  const W=200,H=210,FW=16;
+  const lm=TEMPLATE_LANDMARKS.map(([x,y])=>({x:x*W,y:y*H}));
+  const aps=computeAcupoints(lm);
+  const side=ACU_SIDE[code]||"palmar";const sideKr=side==="dorsal"?"손등":"손바닥";
+  const si3=aps.find(a=>a.code==="SI3");
+  const palm=inflatePalm(palmOutline(lm,si3));
+  const skin=handSilhouette(palm,lm,FW+3,"edge")+handSilhouette(palm,lm,FW,"fill");
+  const nailLayer=side==="dorsal"?handNails(lm):"";
+  let acu="",lab="";
+  for(const ap of aps){if((ACU_SIDE[ap.code]||"palmar")!==side)continue;const hi=ap.code===code;
+    acu+=`<circle class="acu${hi?' hi':''}" cx="${ap.x.toFixed(1)}" cy="${ap.y.toFixed(1)}" r="${hi?5:3}"/>`;
+    if(hi){const right=ap.x>W/2;lab=`<text class="lab" x="${(right?ap.x-8:ap.x+8).toFixed(1)}" y="${(ap.y-8).toFixed(1)}" text-anchor="${right?'end':'start'}">${ap.name_kr} ${ap.code}</text>`;}}
+  const badge=`<text class="hm-side" x="10" y="17">${sideKr} 면</text>`;
+  return `<svg viewBox="0 0 ${W} ${H+20}" class="handmap-svg" role="img" aria-label="${code} ${sideKr}">`+skin+nailLayer+acu+lab+badge+`</svg>`;
+}
+
+// ===== 렌더 =====
+M2 = await (await fetch("/m2_weights.json")).json();
+const grid = document.getElementById("grid");
+for(const name of M2.acups){
+  const m = M2.meta[name], code = m.code, side = ACU_SIDE[code]||"palmar";
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `<h3>${m.name_kr||name}</h3><p class="meta">${code} · ${side==="dorsal"?"손등":"손바닥"}</p>` + buildHandMap(code);
+  grid.appendChild(card);
+}
+</script>
+</body>
+</html>

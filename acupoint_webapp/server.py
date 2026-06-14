@@ -34,6 +34,17 @@ from provider import MockProvider           # noqa: E402
 
 app = FastAPI(title="Acupoint Web (1b)")
 
+
+# 개발/데모 편의: 정적 자산(JS·CSS·HTML)을 캐시하지 않아 새로고침이 항상 최신 코드 반영.
+@app.middleware("http")
+async def _no_cache_static(request, call_next):
+    resp = await call_next(request)
+    p = request.url.path
+    if p in ("/", "/art") or p.endswith((".js", ".css", ".html")):
+        resp.headers["Cache-Control"] = "no-store, must-revalidate"
+    return resp
+
+
 _KB = json.load(open(os.path.join(SYMPTOM_DIR, "kb.json"), encoding="utf-8"))
 _matchers: dict[str, SymptomMatcher] = {}
 
