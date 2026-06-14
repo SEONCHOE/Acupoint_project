@@ -1,0 +1,21 @@
+# Render Blueprint — 혈자리 통합 웹앱(acupoint_webapp) 배포 설정.
+# 레포를 Render에 Blueprint로 연결하면 이 파일대로 웹 서비스가 자동 생성됩니다.
+# 비밀값(OPENAI_API_KEY)은 여기 두지 않고 Render 대시보드에서 입력합니다(sync: false).
+services:
+  - type: web
+    name: acupoint-webapp
+    runtime: python
+    rootDir: acupoint_webapp          # 서비스 루트(여기 requirements.txt/server.py)
+    plan: free                        # 무료: 15분 무활동 시 슬립(첫 요청 콜드스타트)
+    region: singapore                 # 한국에서 가까운 리전
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true                  # master push 시 자동 재배포
+    envVars:
+      - key: OPENAI_API_KEY           # 대시보드에서 직접 입력(코드/레포에 저장 안 함)
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: STT_MODEL                # 음성 인식 모델(원하면 whisper-1 등으로 교체)
+        value: gpt-4o-mini-transcribe
